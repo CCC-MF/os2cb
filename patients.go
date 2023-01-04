@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Patients struct {
@@ -197,10 +198,16 @@ func appendDiagnoseDaten(patientId string, data *PatientData) *PatientData {
 			JOIN property_catalogue_version_entry pcve ON pcve.code = icd10 AND pcve.property_version_id = icd10_propcat_version
 			JOIN erkrankung_prozedur ep ON prozedur.id = ep.prozedur_id
 			JOIN patient p on p.id = prozedur.patient_id
-			WHERE p.patienten_id = ?
+			WHERE p.patienten_id = ? AND beginndatum < ?
 			ORDER BY beginndatum DESC`
 
-	if rows, err := db.Query(queryErkrankungen, patientId); err == nil {
+	// Set filter "Beginndatum" fuer weitere (vorhergehende) Erkrankungen
+	beginn := time.Now().Format("2006-01-02")
+	if beginndatum, err := beginndatum.Value(); err == nil && beginndatum != nil {
+		beginn = fmt.Sprint(beginndatum)
+	}
+
+	if rows, err := db.Query(queryErkrankungen, patientId, beginn); err == nil {
 
 		diags := []string{}
 		var erkrankung sql.NullString
